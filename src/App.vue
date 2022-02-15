@@ -2,13 +2,6 @@
   <div id="app">
     <KakaoMap />
   </div>
-  <br />
-  <br />
-  <br />
-  <hr />
-  <div id="app2">
-    <DataTable />
-  </div>
 </template>
 
 <script>

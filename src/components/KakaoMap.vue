@@ -1,29 +1,16 @@
 <template>
   <div>
-    <div id="map"></div>
-    <p>위도 : {{ latitude }}</p>
-    <p>경도 : {{ longitude }}</p>
-    <input v-model="latitude" placeholder="위도값을 입력하세요" />
-    <input v-model="longitude" placeholder="경도값을 입력하세요" />
-    <button @click="setCenter(latitude, longitude)">이동하기</button>
-
-    <div class="button-group">
-      <button @click="changeSize(0)">Hide</button>
-      <button @click="changeSize(800)">show</button>
-      <button @click="displayMarker(markerPositions1)">marker set 1</button>
-      <button @click="displayMarker(markerPositions2)">marker set 2</button>
-      <button @click="displayMarker([])">marker set 3 (empty)</button>
-      <button @click="displayInfoWindow">infowindow</button>
-    </div>
-  </div>
-
-  <div>
-    <p>IMEI 값을 입력하세요</p>
+    <p>IEMI 값을 입력하세요</p>
     <input v-model="message" placeholder="여기를 수정해보세요" />
     <button @click="connect">통신하기</button>
-    <p>IMEI : {{ message }}</p>
+    <p>IEMI : {{ message }}</p>
   </div>
 
+  <br />
+  <div>
+    <div id="map"></div>
+  </div>
+  <br /><br />
   <div>
     <vue-good-table
       :columns="columns"
@@ -32,8 +19,18 @@
       :lineNumbers="true"
       :search-options="{
         enabled: true,
+        trigger: 'enter',
       }"
-    />
+      :pagination-options="{
+        enabled: true,
+        mode: 'pages',
+        position: 'top',
+        perPage: this.perPage,
+        setCurrentPage: this.pages,
+      }"
+      v-on:page-change="onPageChange"
+    >
+    </vue-good-table>
   </div>
 </template>
 
@@ -52,6 +49,7 @@ export default {
   data() {
     return {
       map: null,
+
       positions: [],
       markerPositions1: [[36.7697899, 126.9317528]],
       markerPositions2: [
@@ -94,8 +92,45 @@ export default {
           field: "Latitude",
           type: "Number",
         },
+        {
+          label: "Speed",
+          field: "Speed",
+          type: "Number",
+        },
+        {
+          label: "Altitude",
+          field: "Altitude",
+          type: "Number",
+        },
+        {
+          label: "G",
+          field: "G",
+          type: "Number",
+        },
+        {
+          label: "V",
+          field: "V",
+          type: "Number",
+        },
+        {
+          label: "CarIdling",
+          field: "CarIdling",
+          type: "Number",
+        },
+        {
+          label: "Bat",
+          field: "Bat",
+          type: "Number",
+        },
+        {
+          label: "Temp",
+          field: "Temp",
+          type: "Number",
+        },
       ],
       rows: [],
+      pages: 0,
+      perPage: 30,
     };
   },
   mounted() {
@@ -194,21 +229,57 @@ export default {
         .then((res) => {
           var rows = res.data;
           this.rows = rows;
-          console.log(rows);
 
           if (rows.length > 0) {
-            console.log("하하");
+            /*
+            //전체 데이터 마커로 표시
             rows.forEach((row) => {
               var latitude, longitude;
               latitude = parseFloat(row.Latitude) / 10000000.0;
               longitude = parseFloat(row.Longitude) / 10000000.0;
               this.positions.push([latitude, longitude]);
             });
+            */
+
+            //페이지수 설정
+            this.pages = Math.ceil(rows.length / this.perPage);
+            //마지막 페이지 행의 갯수
+            var lastPageRows = rows.length % this.perPage;
+
+            //마지막 페이지의 행들만 마커표시 (데이터 갯수가 너무 많아서 카카오맵에서 안 뿌려짐)
+            for (var i = 1; i <= lastPageRows; i++) {
+              var tmp = rows[rows.length - i];
+              console.log(tmp);
+              var latitude = parseFloat(tmp.Latitude) / 10000000.0;
+              var longitude = parseFloat(tmp.Longitude) / 10000000.0;
+              this.positions.push([latitude, longitude]);
+            }
 
             this.displayMarker(this.positions);
           }
         })
         .catch((error) => console.log(error));
+    },
+    onPageChange(params) {
+      // params.currentPage - current page that pagination is at
+      // params.prevPage - previous page
+      // params.currentPerPage - number of items per page
+      // params.total - total number of items in the table
+
+      //페이지 따라 시작 인덱스 위치
+      var startIndex = (params.currentPage - 1) * this.perPage;
+      console.log(params.currentPage);
+      console.log(startIndex);
+
+      var listTmp = [];
+      for (var i = 0; i < 30; i++) {
+        var tmp = this.rows[startIndex + i];
+        var latitude = parseFloat(tmp.Latitude) / 10000000.0;
+        var longitude = parseFloat(tmp.Longitude) / 10000000.0;
+        listTmp.push([latitude, longitude]);
+      }
+      this.positions = listTmp;
+      this.displayMarker(this.positions);
     },
   },
 };
